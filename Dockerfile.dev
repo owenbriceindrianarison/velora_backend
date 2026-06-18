@@ -1,0 +1,23 @@
+# Image unique de développement : sert à la fois de devcontainer VS Code
+# et de conteneur d'exécution pour chaque microservice (via SERVICE).
+
+FROM rust:1.94-slim-bookworm
+
+# Le profil "minimal" de l'image rust officielle n'inclut ni rustfmt ni clippy
+RUN rustup component add rustfmt clippy
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    protobuf-compiler \
+    pkg-config \
+    libssl-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# cargo-watch : hot-reload | sqlx-cli : migrations et mode offline
+RUN cargo install cargo-watch --locked \
+    && cargo install sqlx-cli --no-default-features --features postgres --locked
+
+WORKDIR /app
+
+# Forme shell pour que ${SERVICE} soit interprété à l'exécution
+CMD cargo watch --workdir /app -x "run -p ${SERVICE}"

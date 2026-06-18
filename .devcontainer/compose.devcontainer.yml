@@ -1,0 +1,22 @@
+# Override compose réservé au devcontainer : ajoute le conteneur "workspace"
+# au réseau existant de Velora, sans toucher au compose principal.
+
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: sleep infinity        # VS Code s'attache, rien ne tourne par défaut
+    volumes:
+      - .:/app:cached
+      - cargo_registry:/usr/local/cargo/registry
+      - target_cache:/app/target
+    environment:
+      DATABASE_URL_AUTH: postgres://velora:velora_dev_password@postgres:5432/velora_auth
+      REDIS_URL: redis://redis:6379
+      NATS_URL: nats://nats:4222
+      RUST_LOG: info,sqlx=warn
+
+volumes:
+  cargo_registry:
+  target_cache:

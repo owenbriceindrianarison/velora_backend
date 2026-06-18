@@ -1,0 +1,29 @@
+{
+  "name": "velora-backend",
+  "dockerComposeFile": [
+    "../docker-compose.dev.yml",
+    "compose.devcontainer.yml"
+  ],
+  "service": "workspace",
+  "workspaceFolder": "/app",
+  "shutdownAction": "stopCompose",
+  "initializeCommand": "cp .env.dev .env",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml",
+        "vadimcn.vscode-lldb",
+        "zxh404.vscode-proto3"
+      ],
+      "settings": {
+        "rust-analyzer.check.command": "clippy",
+        "editor.formatOnSave": true,
+        "[rust]": {
+          "editor.defaultFormatter": "rust-lang.rust-analyzer"
+        }
+      }
+    }
+  }
+}
