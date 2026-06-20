@@ -1,5 +1,6 @@
 [workspace]
 resolver = "2"
+members = ["crates/velora-common"]
 
 # Versions centralisées : chaque crate du workspace hérite d'ici.
 [workspace.dependencies]
@@ -35,3 +36,6 @@ async-nats = "0.38"
 # Observabilité
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Crates internes
+velora-common = { path = "crates/velora-common" }
