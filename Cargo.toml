@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["crates/velora-common", "crates/velora-proto"]
+members = ["crates/velora-common", "crates/velora-proto", "services/auth"]
 
-# Versions centralisées : chaque crate du workspace hérite d'ici.
+# Centralized Versions
 [workspace.dependencies]
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1", features = ["derive"] }
@@ -21,7 +21,7 @@ axum = "0.8"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "cors"] }
 
-# Données
+# Database
 sqlx = { version = "0.8", features = [
     "runtime-tokio",
     "tls-rustls",
@@ -33,10 +33,21 @@ sqlx = { version = "0.8", features = [
 redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
 async-nats = "0.38"
 
-# Observabilité
+# Observability
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
-# Crates internes
+# Internal crates
 velora-common = { path = "crates/velora-common" }
 velora-proto = { path = "crates/velora-proto" }
+
+# Secutity / auth
+argon2 = "0.5"
+pasetors = "0.7"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+
+# tools
+async-trait = "0.1"
+anyhow = "1"
