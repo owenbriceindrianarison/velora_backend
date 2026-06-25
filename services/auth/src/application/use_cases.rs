@@ -43,7 +43,7 @@ impl AuthUseCases {
         }
     }
 
-    pub async fn register(&self, email: &str, password: String) -> Result<TokenPair, AuthError> {
+    pub async fn register(&self, email: &str, password: &str) -> Result<TokenPair, AuthError> {
         let email = Email::parse(email)?;
         let password = RawPassword::parse(password)?;
 
@@ -57,6 +57,25 @@ impl AuthUseCases {
         })?;
 
         tracing::info!(user_id = %user.id(), "new user registered");
+
+        self.open_session(user.id()).await
+    }
+
+    pub async fn login(&self, email: &str, password: &str) -> Result<TokenPair, AuthError> {
+        let email = Email::parse(email)?;
+        let password = RawPassword::parse(password)?;
+
+        let user = self
+            .users
+            .find_by_email(&email)
+            .await
+            .map_err(|e| AuthError::Internal(e.into()))?
+            .ok_or(AuthError::InvalidCredentials)?;
+
+        let valid = self.cipher.verify(&password, user.password_hash())?;
+        if !valid {
+            return Err(AuthError::InvalidCredentials);
+        }
 
         self.open_session(user.id()).await
     }

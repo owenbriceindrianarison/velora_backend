@@ -4,7 +4,8 @@ use crate::domain::DomainError;
 pub struct RawPassword(String);
 
 impl RawPassword {
-    pub fn parse(value: String) -> Result<Self, DomainError> {
+    pub fn parse(value: impl Into<String>) -> Result<Self, DomainError> {
+        let value = value.into();
         if value.len() < 8 {
             return Err(DomainError::WeakPassword(
                 "password too short (8 characters min)",
