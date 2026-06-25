@@ -23,7 +23,7 @@ pub enum RepositoryError {
 
 /// Password hashing (implemented using Argon2 on the infrastructure side).
 pub trait PasswordCipher: Send + Sync {
-    fn hash(&self, raw: &RawPassword) -> Result<&HashedPassword, anyhow::Error>;
+    fn hash(&self, raw: &RawPassword) -> Result<HashedPassword, anyhow::Error>;
     fn verify(&self, raw: &RawPassword, hash: &HashedPassword) -> Result<bool, anyhow::Error>;
 }
 
@@ -40,8 +40,13 @@ pub struct AccessToken {
 /// Storage of refresh tokens (implemented by Redis on the infrastructure side).
 #[async_trait]
 pub trait SessionStore: Send + Sync {
-    fn store(&self, refresh_hash: &str, user_id: Uuid, ttl: Duration) -> Result<(), anyhow::Error>;
+    async fn store(
+        &self,
+        refresh_hash: &str,
+        user_id: Uuid,
+        ttl: Duration,
+    ) -> Result<(), anyhow::Error>;
 
     /// Reads AND atomically deletes (GETDEL): this is what makes the rotation secure—a refresh token can only be used once
-    fn consume(&self, refresh_hash: &str) -> Result<Option<Uuid>, anyhow::Error>;
+    async fn consume(&self, refresh_hash: &str) -> Result<Option<Uuid>, anyhow::Error>;
 }
