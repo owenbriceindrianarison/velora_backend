@@ -1,8 +1,7 @@
 {
   "name": "velora-backend",
   "dockerComposeFile": [
-    "../docker-compose.dev.yml",
-    "compose.devcontainer.yml"
+    "../docker-compose.dev.yml"
   ],
   "service": "workspace",
   "workspaceFolder": "/app",

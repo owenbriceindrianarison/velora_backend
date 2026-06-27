@@ -42,7 +42,7 @@ services:
     volumes:
       - nats_data:/data
 
-  # ── Stockage objet S3-compatible (vidéos, affiches) ─
+  # --- Stockage objet S3-compatible (vidéos, affiches) -----
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -92,9 +92,56 @@ services:
       - "${JAEGER_UI_PORT}:16686"   # interface web des traces
       - "${OTLP_GRPC_PORT}:4317"    # réception OTLP depuis nos services
 
+  # --- Devcontainer VS Code --------------------------------
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: sleep infinity
+    volumes:
+      - .:/app:cached
+      - cargo_registry:/usr/local/cargo/registry
+      - target_cache:/app/target
+    environment:
+      DATABASE_URL_AUTH: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/velora_auth
+      REDIS_URL: redis://redis:6379
+      NATS_URL: nats://nats:4222
+      RUST_LOG: info,sqlx=warn
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # --- Microservices ------------------------------------
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      SERVICE: auth
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/velora_auth
+      REDIS_URL: redis://redis:6379
+      PASETO_SECRET_KEY: ${PASETO_SECRET_KEY}
+      GRPC_PORT: "50051"
+      RUST_LOG: info
+    ports:
+      - "50051:50051"
+    volumes:
+      - .:/app:cached
+      - cargo_registry:/usr/local/cargo/registry
+      - target_cache:/app/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   redis_data:
   nats_data:
   minio_data:
   meili_data:
+  cargo_registry:
+  target_cache: 

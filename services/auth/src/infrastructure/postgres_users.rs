@@ -51,7 +51,7 @@ impl UserRespository for PostgresUserRepository {
         .await
         .map_err(|e| match &e {
             // 23505 = Postgres uniqueness violation: the email address already exists.
-            sqlx::Error::Database(db) if db.code().as_deref() == Some("235005") => {
+            sqlx::Error::Database(db) if db.code().as_deref() == Some("23505") => {
                 RepositoryError::Conflict
             }
             _ => RepositoryError::Other(e.into()),
