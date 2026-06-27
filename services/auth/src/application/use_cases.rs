@@ -80,6 +80,25 @@ impl AuthUseCases {
         self.open_session(user.id()).await
     }
 
+    pub async fn refresh(&self, refresh_token: &str) -> Result<TokenPair, AuthError> {
+        // consume = GETDEL: the old token is invalidated here, whether we succeed or not.
+        // This is ROTATION: a token that is stolen and replayed after legitimate use will fail.
+        let user_id = self
+            .sessions
+            .consume(&hash_token(refresh_token))
+            .await?
+            .ok_or(AuthError::SessionNotFound)?;
+
+        self.open_session(user_id).await
+    }
+
+    pub async fn logout(&self, refresh_token: &str) -> Result<(), AuthError> {
+        // Redeem without reissuing = revoke.
+        self.sessions.consume(&hash_token(refresh_token)).await?;
+
+        Ok(())
+    }
+
     /// Emits an access/refresh pair and saves the session.
     async fn open_session(&self, user_id: Uuid) -> Result<TokenPair, AuthError> {
         let access = self.tokens.issue(user_id)?;
