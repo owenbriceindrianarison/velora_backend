@@ -6,7 +6,7 @@ service AuthService {
     rpc Register(RegisterRequest) returns (AuthTokens);
     rpc Login(LoginRequest) returns (AuthTokens);
     rpc RefreshSession(RefreshSessionRequest) returns (AuthTokens);
-    rpc Logout(LogoutRequest) returns (AuthTokens);
+    rpc Logout(LogoutRequest) returns (LogoutResponse);
 }
 
 message RegisterRequest {
