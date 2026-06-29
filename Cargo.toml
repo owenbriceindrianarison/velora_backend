@@ -1,6 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["crates/velora-common", "crates/velora-proto", "services/auth"]
+members = [
+    "crates/velora-common",
+    "crates/velora-proto",
+    "services/auth",
+    "services/gateway",
+]
 
 # Centralized Versions
 [workspace.dependencies]
