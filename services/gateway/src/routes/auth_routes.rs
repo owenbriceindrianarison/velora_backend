@@ -1,4 +1,4 @@
-use axum::{extract::State, Json};
+use axum::{extract::State, http::StatusCode, Json};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use velora_proto::auth::v1::{
@@ -8,9 +8,8 @@ use velora_proto::auth::v1::{
 use crate::{error::ApiError, state::AppState};
 
 // --- REST DTOs ---------------------------------------------
-// The gateway does not validate the business logic (that is the role of the
-// auth-service domain): it simply acts as a transport layer. Duplicate validation here
-// would eventually diverge from the actual rule.
+// Structural validation only (shape of the request): empty fields, email syntax.
+// Business rules (password strength, email uniqueness…) stay in the auth-service domain.
 
 #[derive(Deserialize, ToSchema)]
 pub struct CredentialsBody {
@@ -20,10 +19,35 @@ pub struct CredentialsBody {
     pub password: String,
 }
 
+impl CredentialsBody {
+    pub fn validate(&self) -> Result<(), ApiError> {
+        if self.email.trim().is_empty() {
+            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "email is required".into()));
+        }
+        let parts: Vec<&str> = self.email.splitn(2, '@').collect();
+        if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "email is invalid".into()));
+        }
+        if self.password.is_empty() {
+            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "password is required".into()));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct RefreshBody {
     /// Opaque refresh token previously issued by this API
     pub refresh_token: String,
+}
+
+impl RefreshBody {
+    pub fn validate(&self) -> Result<(), ApiError> {
+        if self.refresh_token.is_empty() {
+            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "refresh_token is required".into()));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Serialize, ToSchema)]
@@ -65,6 +89,7 @@ pub async fn register(
     State(state): State<AppState>,
     Json(body): Json<CredentialsBody>,
 ) -> Result<Json<TokensResponse>, ApiError> {
+    body.validate()?;
     let reply = state
         .auth_client
         .clone() // Low-cost clone: same HTTP/2 channel underneath
@@ -93,6 +118,7 @@ pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<CredentialsBody>,
 ) -> Result<Json<TokensResponse>, ApiError> {
+    body.validate()?;
     let reply = state
         .auth_client
         .clone()
@@ -120,6 +146,7 @@ pub async fn refresh(
     State(state): State<AppState>,
     Json(body): Json<RefreshBody>,
 ) -> Result<Json<TokensResponse>, ApiError> {
+    body.validate()?;
     let reply = state
         .auth_client
         .clone()
@@ -146,6 +173,7 @@ pub async fn logout(
     State(state): State<AppState>,
     Json(body): Json<RefreshBody>,
 ) -> Result<Json<serde_json::Value>, ApiError> {
+    body.validate()?;
     state
         .auth_client
         .clone()
