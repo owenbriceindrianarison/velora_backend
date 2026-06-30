@@ -1,5 +1,6 @@
 use axum::{extract::State, Json};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use velora_proto::auth::v1::{
     AuthTokens, LoginRequest, LogoutRequest, RefreshSessionRequest, RegisterRequest,
 };
@@ -11,23 +12,27 @@ use crate::{error::ApiError, state::AppState};
 // auth-service domain): it simply acts as a transport layer. Duplicate validation here
 // would eventually diverge from the actual rule.
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct CredentialsBody {
-    email: String,
-    password: String,
+    /// User email address
+    pub email: String,
+    /// User password (min 8 chars enforced by auth-service)
+    pub password: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct RefreshBody {
-    refresh_token: String,
+    /// Opaque refresh token previously issued by this API
+    pub refresh_token: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct TokensResponse {
     access_token: String,
     refresh_token: String,
+    /// Token lifetime in seconds
     expires_in: i64,
-    token_type: &'static str,
+    token_type: String,
 }
 
 impl From<AuthTokens> for TokensResponse {
@@ -36,7 +41,7 @@ impl From<AuthTokens> for TokensResponse {
             access_token: t.access_token,
             refresh_token: t.refresh_token,
             expires_in: t.expires_in,
-            token_type: "Bearer",
+            token_type: "Bearer".to_string(),
         }
     }
 }
@@ -45,6 +50,17 @@ impl From<AuthTokens> for TokensResponse {
 // The same pattern applies everywhere: DTO → proto message → gRPC call
 // → proto response → DTO. Errors are propagated via `?` thanks to ApiError's `From<tonic::Status>`.
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/register",
+    tag = "auth",
+    request_body = CredentialsBody,
+    responses(
+        (status = 200, description = "Account created, tokens returned", body = TokensResponse),
+        (status = 400, description = "Invalid input"),
+        (status = 409, description = "Email already registered"),
+    )
+)]
 pub async fn register(
     State(state): State<AppState>,
     Json(body): Json<CredentialsBody>,
@@ -62,6 +78,17 @@ pub async fn register(
     Ok(Json(reply.into()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/login",
+    tag = "auth",
+    request_body = CredentialsBody,
+    responses(
+        (status = 200, description = "Login successful, tokens returned", body = TokensResponse),
+        (status = 400, description = "Invalid input"),
+        (status = 401, description = "Wrong credentials"),
+    )
+)]
 pub async fn login(
     State(state): State<AppState>,
     Json(body): Json<CredentialsBody>,
@@ -79,6 +106,16 @@ pub async fn login(
     Ok(Json(reply.into()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/refresh",
+    tag = "auth",
+    request_body = RefreshBody,
+    responses(
+        (status = 200, description = "New token pair issued", body = TokensResponse),
+        (status = 401, description = "Refresh token expired or invalid"),
+    )
+)]
 pub async fn refresh(
     State(state): State<AppState>,
     Json(body): Json<RefreshBody>,
@@ -95,6 +132,16 @@ pub async fn refresh(
     Ok(Json(reply.into()))
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/auth/logout",
+    tag = "auth",
+    request_body = RefreshBody,
+    responses(
+        (status = 200, description = "Session revoked"),
+        (status = 401, description = "Refresh token invalid or already revoked"),
+    )
+)]
 pub async fn logout(
     State(state): State<AppState>,
     Json(body): Json<RefreshBody>,

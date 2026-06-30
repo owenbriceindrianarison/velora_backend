@@ -25,6 +25,7 @@ tonic-build = "0.13"
 axum = "0.8"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "cors"] }
+utoipa = { version = "4", features = ["axum_extras", "uuid"] }
 
 # Database
 sqlx = { version = "0.8", features = [
