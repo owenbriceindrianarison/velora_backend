@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -27,7 +27,7 @@ services:
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -35,10 +35,10 @@ services:
   # --- Bus d'événements --------------------------------------
   nats:
     image: nats:2.10-alpine
-    command: ["--jetstream", "--store_dir", "/data"]
+    command: [ "--jetstream", "--store_dir", "/data" ]
     ports:
       - "${NATS_CLIENT_PORT}:4222"
-      - "${NATS_MONITOR_PORT}:8222"   # UI de monitoring HTTP
+      - "${NATS_MONITOR_PORT}:8222" # UI de monitoring HTTP
     volumes:
       - nats_data:/data
 
@@ -51,11 +51,11 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     ports:
       - "${MINIO_API_PORT}:9000"
-      - "${MINIO_CONSOLE_PORT}:9001"  # console web d'administration
+      - "${MINIO_CONSOLE_PORT}:9001" # console web d'administration
     volumes:
       - minio_data:/data
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
+      test: [ "CMD", "mc", "ready", "local" ]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -67,12 +67,7 @@ services:
       minio:
         condition: service_healthy
     entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
-      mc mb --ignore-existing local/velora-videos;
-      mc mb --ignore-existing local/velora-images;
-      exit 0;
-      "
+      /bin/sh -c " mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; mc mb --ignore-existing local/velora-videos; mc mb --ignore-existing local/velora-images; exit 0; "
 
   # --- Recherche du catalogue --------------------------------------
   meilisearch:
@@ -89,8 +84,8 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.62.0
     ports:
-      - "${JAEGER_UI_PORT}:16686"   # interface web des traces
-      - "${OTLP_GRPC_PORT}:4317"    # réception OTLP depuis nos services
+      - "${JAEGER_UI_PORT}:16686" # interface web des traces
+      - "${OTLP_GRPC_PORT}:4317" # réception OTLP depuis nos services
 
   # --- Devcontainer VS Code --------------------------------
   workspace:
@@ -114,6 +109,24 @@ services:
         condition: service_healthy
 
   # --- Microservices ------------------------------------
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      SERVICE: gateway
+      HTTP_PORT: "8080"
+      AUTH_GRPC_URL: http://auth:50051
+      PASETO_PUBLIC_KEY: ${PASETO_PUBLIC_KEY} # PUBLIC KEY ONLY
+      RUST_LOG: info,tower_http=debug
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/app:cached
+      - cargo_registry:/usr/local/cargo/registry
+      - target_cache:/app/target
+    depends_on:
+      - auth
   auth:
     build:
       context: .
@@ -144,4 +157,4 @@ volumes:
   minio_data:
   meili_data:
   cargo_registry:
-  target_cache: 
+  target_cache:
