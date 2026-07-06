@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tonic::{Request, Response, Status};
+use tonic::{metadata::MetadataValue, Request, Response, Status};
 use velora_proto::auth::v1::{
     auth_service_server::AuthService, AuthTokens, LoginRequest, LogoutRequest, LogoutResponse,
     RefreshSessionRequest, RegisterRequest,
@@ -20,11 +20,25 @@ impl GrpcAuthService {
 
 /// Translation of business errors into gRPC statuses.
 fn to_status(err: AuthError) -> Status {
+    tracing::info!(err = %err, "debug error");
+
+    fn with_code(mut status: Status, code: &'static str) -> Status {
+        status
+            .metadata_mut()
+            .insert("x-error-code", MetadataValue::from_static(code));
+        status
+    }
+
+    let code = err.error_code();
     match err {
-        AuthError::Domain(e) => Status::invalid_argument(e.to_string()),
-        AuthError::EmailTaken => Status::already_exists(err.to_string()),
-        AuthError::InvalidCredentials => Status::unauthenticated(err.to_string()),
-        AuthError::SessionNotFound => Status::unauthenticated(err.to_string()),
+        AuthError::Domain(e) => with_code(Status::invalid_argument(e.to_string()), code),
+        AuthError::EmailTaken => with_code(Status::already_exists("email already taken"), code),
+        AuthError::InvalidCredentials => {
+            with_code(Status::unauthenticated("invalid credentials"), code)
+        }
+        AuthError::SessionNotFound => {
+            with_code(Status::unauthenticated("expired or revoked session"), code)
+        }
         AuthError::Internal(e) => {
             tracing::error!(error = ?e, "auth internal error");
             Status::internal("internal error")

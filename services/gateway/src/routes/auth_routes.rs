@@ -1,4 +1,4 @@
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::State, Json};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use velora_proto::auth::v1::{
@@ -22,14 +22,14 @@ pub struct CredentialsBody {
 impl CredentialsBody {
     pub fn validate(&self) -> Result<(), ApiError> {
         if self.email.trim().is_empty() {
-            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "email is required".into()));
+            return Err(ApiError::bad_request("email is required", "EMAIL_REQUIRED"));
         }
         let parts: Vec<&str> = self.email.splitn(2, '@').collect();
         if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
-            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "email is invalid".into()));
+            return Err(ApiError::bad_request("email is invalid", "EMAIL_INVALID"));
         }
         if self.password.is_empty() {
-            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "password is required".into()));
+            return Err(ApiError::bad_request("password is required", "PASSWORD_REQUIRED"));
         }
         Ok(())
     }
@@ -44,7 +44,7 @@ pub struct RefreshBody {
 impl RefreshBody {
     pub fn validate(&self) -> Result<(), ApiError> {
         if self.refresh_token.is_empty() {
-            return Err(ApiError::Status(StatusCode::BAD_REQUEST, "refresh_token is required".into()));
+            return Err(ApiError::bad_request("refresh_token is required", "REFRESH_TOKEN_REQUIRED"));
         }
         Ok(())
     }
