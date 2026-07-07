@@ -2535,6 +2535,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "velora-events"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "time",
+ "uuid",
+]
+
+[[package]]
 name = "velora-proto"
 version = "0.1.0"
 dependencies = [

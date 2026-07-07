@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/velora-common",
     "crates/velora-proto",
+    "crates/velora-events",
     "services/auth",
     "services/gateway",
 ]
@@ -14,7 +15,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
-time = { version = "0.3", features = ["serde"] }
+time = { version = "0.3", features = ["serde-well-known"] }
 
 # gRPC / protobuf
 tonic = "0.13"
@@ -46,6 +47,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # Internal crates
 velora-common = { path = "crates/velora-common" }
 velora-proto = { path = "crates/velora-proto" }
+velora-events = { path = "crates/velora-events" }
 
 # Secutity / auth
 argon2 = "0.5"
