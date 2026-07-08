@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package velora.users.v1;
+
+service UserService {
+    rpc ListProfiles(ListProfilesRequest) returns (ProfileList);
+    rpc CreateProfile(CreateProfileRequest) returns (Profile);
+    rpc DeleteProfile(DeleteProfileRequest) returns (DeleteProfileResponse);
+}
+
+message ListProfilesRequest {
+    string account_id = 1;
+}
+
+message CreateProfileRequest {
+    string account_id = 1;
+    string name = 2;
+    bool kids = 3;
+}
+
+message DeleteProfileRequest {
+    string account_id = 1;
+    string profile_id = 2;
+}
+
+message Profile {
+    string id = 1;
+    string name = 2;
+    bool kids = 3;
+}
+
+message ProfileList {
+    repeated Profile profiles = 1;
+}
+
+message DeleteProfileResponse {}

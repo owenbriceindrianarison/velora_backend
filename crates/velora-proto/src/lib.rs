@@ -7,3 +7,9 @@ pub mod auth {
         tonic::include_proto!("velora.auth.v1");
     }
 }
+
+pub mod users {
+    pub mod v1 {
+        tonic::include_proto!("velora.users.v1");
+    }
+}

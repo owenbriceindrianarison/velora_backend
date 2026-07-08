@@ -1,6 +1,5 @@
 use std::{sync::Arc, time::Duration};
 
-use async_nats::jetstream;
 use auth::{
     application::AuthUseCases,
     config,
@@ -36,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
             ..Default::default()
         })
         .await
-        .map_err(|e| anyhow::anyhow!("Creating the NATS stream : {e}"));
+        .map_err(|e| anyhow::anyhow!("Creating the NATS stream : {e}"))?;
 
     tokio::spawn(infrastructure::OutboxRelay::new(pool.clone(), jetstream).run());
 
