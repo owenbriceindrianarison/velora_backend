@@ -1,3 +1,4 @@
+use serde_json::Value;
 use std::time::Duration;
 
 /// PORTS: what the application needs, expressed in traits.
@@ -6,9 +7,25 @@ use uuid::Uuid;
 
 use crate::domain::{Email, HashedPassword, RawPassword, User};
 
+pub struct OutboxMessage {
+    pub id: Uuid,
+    pub subject: &'static str,
+    pub payload: Value,
+}
+
+impl OutboxMessage {
+    pub fn new(subject: &'static str, payload: Value) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            subject,
+            payload,
+        }
+    }
+}
+
 #[async_trait]
 pub trait UserRespository: Send + Sync {
-    async fn insert(&self, user: &User) -> Result<(), RepositoryError>;
+    async fn insert(&self, user: &User, event: OutboxMessage) -> Result<(), RepositoryError>;
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, RepositoryError>;
 }
 

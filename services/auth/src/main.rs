@@ -1,9 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
+use async_nats::jetstream;
 use auth::{
     application::AuthUseCases,
     config,
-    infrastructure::{Argon2Cipher, PasetoIssuer, PostgresUserRepository, RedisSessionStore},
+    infrastructure::{self, Argon2Cipher, PasetoIssuer, PostgresUserRepository, RedisSessionStore},
     presentation::GrpcAuthService,
 };
 use velora_proto::auth::v1::auth_service_server::AuthServiceServer;
@@ -24,6 +25,20 @@ async fn main() -> anyhow::Result<()> {
 
     let redis_client = redis::Client::open(cfg.redis_url.as_str())?;
     let redis_conn = redis::aio::ConnectionManager::new(redis_client).await?;
+
+    // NATS + JetStream
+    let nats = async_nats::connect(&cfg.nats_url).await?;
+    let jetstream = async_nats::jetstream::new(nats);
+    jetstream
+        .get_or_create_stream(async_nats::jetstream::stream::Config {
+            name: "VELORA_USERS".to_string(),
+            subjects: vec!["velora.users.>".to_string()],
+            ..Default::default()
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Creating the NATS stream : {e}"));
+
+    tokio::spawn(infrastructure::OutboxRelay::new(pool.clone(), jetstream).run());
 
     // --- Root composition: implementations are connected to the ports.
     // This is the only place in the service that knows everyone.

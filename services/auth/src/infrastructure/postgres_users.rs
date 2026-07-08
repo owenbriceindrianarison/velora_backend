@@ -3,7 +3,7 @@ use sqlx::PgPool;
 use time::OffsetDateTime;
 
 use crate::{
-    application::{RepositoryError, UserRespository},
+    application::{OutboxMessage, RepositoryError, UserRespository},
     domain::{Email, HashedPassword, User},
 };
 
@@ -38,7 +38,13 @@ impl From<UserRow> for User {
 
 #[async_trait]
 impl UserRespository for PostgresUserRepository {
-    async fn insert(&self, user: &User) -> Result<(), RepositoryError> {
+    async fn insert(&self, user: &User, event: OutboxMessage) -> Result<(), RepositoryError> {
+        let mut tx = self
+            .pool
+            .begin()
+            .await
+            .map_err(|e| RepositoryError::Other(e.into()))?;
+
         sqlx::query(
             "INSERT INTO users(id, email, password_hash, created_at)
             VALUES ($1, $2, $3, $4)",
@@ -47,7 +53,7 @@ impl UserRespository for PostgresUserRepository {
         .bind(user.email().as_str())
         .bind(user.password_hash().as_str())
         .bind(user.created_at())
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await
         .map_err(|e| match &e {
             // 23505 = Postgres uniqueness violation: the email address already exists.
@@ -56,6 +62,21 @@ impl UserRespository for PostgresUserRepository {
             }
             _ => RepositoryError::Other(e.into()),
         })?;
+
+        sqlx::query(
+            "INSERT INTO outbox (id, subject, payload)
+            VALUES ($1, $2, $3)",
+        )
+        .bind(event.id)
+        .bind(event.subject)
+        .bind(event.payload)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| RepositoryError::Other(e.into()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| RepositoryError::Other(e.into()))?;
 
         Ok(())
     }

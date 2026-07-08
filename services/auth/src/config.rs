@@ -7,6 +7,7 @@ pub struct Config {
     pub paseto_secret_hex: String,
     pub access_ttl_secs: u64,
     pub refresh_ttl_secs: u64,
+    pub nats_url: String,
 }
 
 impl Config {
@@ -22,6 +23,7 @@ impl Config {
             refresh_ttl_secs: config::optional("REFRESH_TTL_SECS", "2592000")
                 .parse()
                 .unwrap_or(2_592_000), // 30 days
+            nats_url: config::required("NATS_URL")?,
         })
     }
 }

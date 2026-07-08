@@ -2,12 +2,15 @@ use std::{sync::Arc, time::Duration};
 
 use rand::RngCore;
 use sha2::{Digest, Sha256};
+use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::{
-    application::RepositoryError,
-    domain::{Email, RawPassword, User},
-};
+use velora_events::users::{UserRegistered, SUBJECT_REGISTERED};
+
+use crate::application::RepositoryError;
+use crate::domain::{Email, RawPassword, User};
+
+use super::OutboxMessage;
 
 use super::{AccessToken, AuthError, PasswordCipher, SessionStore, TokenIssuer, UserRespository};
 
@@ -46,12 +49,20 @@ impl AuthUseCases {
     pub async fn register(&self, email: &str, password: &str) -> Result<TokenPair, AuthError> {
         let email = Email::parse(email)?;
         let password = RawPassword::parse(password)?;
-
         let hash = self.cipher.hash(&password)?;
-
         let user = User::register(email, hash);
 
-        self.users.insert(&user).await.map_err(|e| match e {
+        let event = OutboxMessage::new(
+            SUBJECT_REGISTERED,
+            serde_json::to_value(UserRegistered {
+                user_id: user.id(),
+                email: user.email().as_str().to_string(),
+                occured_at: OffsetDateTime::now_utc(),
+            })
+            .map_err(|e| AuthError::Internal(e.into()))?,
+        );
+
+        self.users.insert(&user, event).await.map_err(|e| match e {
             RepositoryError::Conflict => AuthError::EmailTaken,
             RepositoryError::Other(e) => AuthError::Internal(e),
         })?;

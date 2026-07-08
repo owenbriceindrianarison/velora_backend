@@ -30,7 +30,8 @@ endif
 
 .PHONY: up down restart ps logs psql \
 	migrate-add migrate-up migrate-down migrate-info migrate-up-all \
-	test test-all
+	test test-all \
+	redis nats-streams nats-info nats-view nats-get nats-consumers nats-sub nats-pub
 
 up:
 	$(COMPOSE) up -d
@@ -49,6 +50,48 @@ logs:
 
 psql:
 	docker exec -it velora-postgres-1 psql -U velora -d $(or $(db),velora_auth)
+
+redis:
+	docker exec -it velora-redis-1 redis-cli
+
+# --- NATS JetStream -------------------------------------------
+# Usage:
+#   make nats-streams                       (liste tous les streams)
+#   make nats-info    stream=<name>         (détails d'un stream)
+#   make nats-view    stream=<name>         (parcourir les messages)
+#   make nats-get     stream=<name> seq=<n> (message par numéro de séquence)
+#   make nats-consumers stream=<name>       (liste les consumers)
+#   make nats-sub     subject=<subject>     (écouter un subject en live)
+#   make nats-pub     subject=<subject> msg=<json> (publier un message test)
+
+NATS := nats --server nats://localhost:$(NATS_CLIENT_PORT)
+
+nats-streams:
+	$(NATS) stream ls
+
+nats-info:
+	@test -n "$(stream)" || { echo "usage: make nats-info stream=<name>"; exit 1; }
+	$(NATS) stream info $(stream)
+
+nats-view:
+	@test -n "$(stream)" || { echo "usage: make nats-view stream=<name>"; exit 1; }
+	$(NATS) stream view $(stream)
+
+nats-get:
+	@test -n "$(stream)" -a -n "$(seq)" || { echo "usage: make nats-get stream=<name> seq=<n>"; exit 1; }
+	$(NATS) stream get $(stream) $(seq)
+
+nats-consumers:
+	@test -n "$(stream)" || { echo "usage: make nats-consumers stream=<name>"; exit 1; }
+	$(NATS) consumer ls $(stream)
+
+nats-sub:
+	@test -n "$(subject)" || { echo "usage: make nats-sub subject=<subject>"; exit 1; }
+	$(NATS) subscribe $(subject)
+
+nats-pub:
+	@test -n "$(subject)" -a -n "$(msg)" || { echo "usage: make nats-pub subject=<subject> msg='<json>'"; exit 1; }
+	$(NATS) publish $(subject) '$(msg)'
 
 # --- Migrations (per service) -----------------------------------
 # Usage:

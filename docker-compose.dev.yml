@@ -80,6 +80,14 @@ services:
     volumes:
       - meili_data:/meili_data
 
+  # --- UI Redis (navigator : http://localhost:5540) -----------
+  redis-insight:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+
   # --- Traces distribuées ----------------------------------------
   jaeger:
     image: jaegertracing/all-in-one:1.62.0
@@ -135,6 +143,7 @@ services:
       SERVICE: auth
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/velora_auth
       REDIS_URL: redis://redis:6379
+      NATS_URL: nats://nats:4222
       PASETO_SECRET_KEY: ${PASETO_SECRET_KEY}
       GRPC_PORT: "50051"
       RUST_LOG: info
@@ -149,6 +158,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      nats:
+        condition: service_started
 
 volumes:
   postgres_data:
