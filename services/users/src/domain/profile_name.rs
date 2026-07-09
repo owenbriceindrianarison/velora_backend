@@ -1,7 +1,13 @@
 use super::DomainError;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct ProfileName(String);
+
+impl PartialEq for ProfileName {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
 
 impl ProfileName {
     pub fn parse(value: impl AsRef<str>) -> Result<Self, DomainError> {

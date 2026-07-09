@@ -106,6 +106,7 @@ services:
       - cargo_registry:/usr/local/cargo/registry
       - target_cache:/app/target
     environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/velora_auth
       DATABASE_URL_AUTH: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/velora_auth
       REDIS_URL: redis://redis:6379
       NATS_URL: nats://nats:4222
