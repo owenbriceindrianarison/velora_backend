@@ -2839,6 +2839,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "users"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "async-trait",
+ "futures",
+ "prost",
+ "serde_json",
+ "sqlx",
+ "thiserror 2.0.18",
+ "time",
+ "tokio",
+ "tonic",
+ "tracing",
+ "uuid",
+ "velora-common",
+ "velora-events",
+ "velora-proto",
+]
+
+[[package]]
 name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

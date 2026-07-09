@@ -6,6 +6,7 @@ members = [
     "crates/velora-events",
     "services/auth",
     "services/gateway",
+    "services/users",
 ]
 
 # Centralized Versions
