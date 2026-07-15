@@ -3,11 +3,11 @@ use std::sync::Arc;
 use futures::StreamExt;
 use velora_events::users::{SUBJECT_REGISTERED, UserRegistered};
 
-use crate::application::UserUsecases;
+use crate::application::UserUseCases;
 
 pub async fn run_consumer(
     jetstream: async_nats::jetstream::Context,
-    use_cases: Arc<UserUsecases>,
+    use_cases: Arc<UserUseCases>,
 ) -> anyhow::Result<()> {
     let stream = jetstream
         .get_or_create_stream(async_nats::jetstream::stream::Config {

@@ -7,11 +7,11 @@ use crate::{
     domain::{Account, Profile, ProfileKind, ProfileName},
 };
 
-pub struct UserUsecases {
+pub struct UserUseCases {
     accounts: Arc<dyn AccountRepository>,
 }
 
-impl UserUsecases {
+impl UserUseCases {
     pub fn new(accounts: Arc<dyn AccountRepository>) -> Self {
         Self { accounts }
     }
